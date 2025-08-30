@@ -1,85 +1,74 @@
-CURDIR := $(shell pwd)
-DEPNOTIFY_URL := "https://files.nomad.menu/DEPNotify.zip"
-DEPNOTIFY_ZIPPATH := $(CURDIR)/DEPNotify.zip
+SHELL := /bin/bash
+CURDIR != pwd
 MUNKIPKG := /usr/local/bin/munkipkg
 PKG_ROOT := $(CURDIR)/pkg/erase-install/payload
+PKG_SCRIPTS := $(CURDIR)/pkg/erase-install/scripts
 PKG_BUILD := $(CURDIR)/pkg/erase-install/build
-PKG_ROOT_NOPYTHON := $(CURDIR)/pkg/erase-install-nopython/payload
-PKG_BUILD_NOPYTHON := $(CURDIR)/pkg/erase-install-nopython/build
-PKG_ROOT_DEPNOTIFY := $(CURDIR)/pkg/erase-install-depnotify/payload
-PKG_BUILD_DEPNOTIFY := $(CURDIR)/pkg/erase-install-depnotify/build
-PKG_VERSION := $(shell defaults read $(CURDIR)/pkg/erase-install/build-info.plist version)
-PYTHON_VERSION := 3.9.5
-PYTHON_INSTALLER_SCRIPT := $(CURDIR)/../relocatable-python/make_relocatable_python_framework.py
-PYTHON_REQUIREMENTS := $(CURDIR)/requirements_python3.txt
-
+GITHUB_TOKEN_FILE := /Users/Shared/gh_token
 
 all: build
 
 .PHONY : build
 build: 
-	@echo "Copying erase-install.sh into /Library/Management/erase-install"
+	@echo
+	@echo "## Copying erase-install.sh into /Library/Management/erase-install"
 	mkdir -p "$(PKG_ROOT)/Library/Management/erase-install"
 	cp "$(CURDIR)/erase-install.sh" "$(PKG_ROOT)/Library/Management/erase-install/erase-install.sh"
 	chmod 755 "$(PKG_ROOT)/Library/Management/erase-install/erase-install.sh"
 
-	@echo "Copying installinstallmacos.py into /Library/Management/erase-install"
-	cp "$(CURDIR)/../macadmin-scripts/installinstallmacos.py" "$(PKG_ROOT)/Library/Management/erase-install/installinstallmacos.py"
+	@echo
+	@echo "## Copying icons folder into /Library/Management/erase-install"
+	cp -r "$(CURDIR)/icons" "$(PKG_ROOT)/Library/Management/erase-install/"
+	chmod 755 "$(PKG_ROOT)/Library/Management/erase-install/icons"
+	chmod 644 "$(PKG_ROOT)/Library/Management/erase-install/icons/"*
 
-	@echo "Installing Python into /Library/Management/erase-install"
-	python3 "$(PYTHON_INSTALLER_SCRIPT)" --destination "$(PKG_ROOT)/Library/Management/erase-install/" --python-version=$(PYTHON_VERSION) --pip-requirements="$(PYTHON_REQUIREMENTS)"
+	mkdir -p "$(PKG_SCRIPTS)"
 
-	@echo "Making package in $(PKG_BUILD) directory"
+	@echo
+	swiftdialog_tag=$$(awk -F '=' '/swiftdialog_tag_required="v/ {print $$NF}' $(CURDIR)/erase-install.sh | tr -d '"') ;\
+	echo "## Downloading swiftDialog $$swiftdialog_tag" ;\
+	github_token=$$(cat $(GITHUB_TOKEN_FILE)) ;\
+	swiftdialog_api_url="https://api.github.com/repos/swiftDialog/swiftDialog/releases" ;\
+	swiftdialog_url=$$(/usr/bin/curl -sL -H "Accept: application/json" "$$swiftdialog_api_url/tags/$$swiftdialog_tag" --header "Authorization: Bearer $$github_token" --header "X-GitHub-Api-Version: 2022-11-28" | /usr/bin/plutil -extract 'assets.1.browser_download_url' raw -) ;\
+	echo "## Downloading swiftDialog from $$swiftdialog_url" ;\
+	curl -L "$$swiftdialog_url" -o "/private/tmp/swiftDialog.dmg" ;\
+	echo "## Downloaded swiftDialog $$swiftdialog_tag" ;\
+	hdiutil attach -quiet -noverify -nobrowse "/private/tmp/swiftDialog.dmg" ;\
+	cp -r /Volumes/Dialog/Dialog.app "$(PKG_ROOT)/Library/Management/erase-install/Dialog.app"
+
+	@echo
+	swiftdialog_bigsur_tag=$$(awk -F '=' '/swiftdialog_bigsur_tag_required="v/ {print $$NF}' $(CURDIR)/erase-install.sh | tr -d '"') ;\
+	echo "## Downloading swiftDialog $$swiftdialog_bigsur_tag" ;\
+	github_token=$$(cat $(GITHUB_TOKEN_FILE)) ;\
+	swiftdialog_api_url="https://api.github.com/repos/swiftDialog/swiftDialog/releases" ;\
+	swiftdialog_bigsur_url=$$(/usr/bin/curl -sL -H "Accept: application/json" "$$swiftdialog_api_url/tags/$$swiftdialog_bigsur_tag" --header "Authorization: Bearer $$github_token" --header "X-GitHub-Api-Version: 2022-11-28" | /usr/bin/plutil -extract 'assets.0.browser_download_url' raw -) ;\
+	echo "## Downloading swiftDialog from $$swiftdialog_bigsur_url" ;\
+	curl -L "$$swiftdialog_bigsur_url" -o "$(PKG_SCRIPTS)/swiftDialog-bigsur.pkg" ;\
+	echo "## Downloaded swiftDialog $$swiftdialog_bigsur_tag"
+
+	@echo
+	mist_tag=$$(awk -F '=' '/mist_tag_required=/ {print $$NF}' $(CURDIR)/erase-install.sh | tr -d '"') ;\
+	echo "## Downloading mist-cli $$mist_tag" ;\
+	github_token=$$(cat $(GITHUB_TOKEN_FILE)) ;\
+	mist_api_url="https://api.github.com/repos/ninxsoft/mist-cli/releases" ;\
+	mist_url=$$(/usr/bin/curl -sL -H "Accept: application/json" "$$mist_api_url/tags/$$mist_tag" --header "Authorization: Bearer $$github_token" --header "X-GitHub-Api-Version: 2022-11-28" | awk -F '"' '/browser_download_url/ { print $$4; exit }') ;\
+	curl -L "$$mist_url" -o "$(PKG_SCRIPTS)/mist-cli.pkg" ;\
+	echo "## Downloaded mist-cli $$mist_tag"
+
+	@echo
+	pkg_version=$$(awk -F '=' '/^version=/ {print $$NF}' $(CURDIR)/erase-install.sh | tr -d '"') ;\
+	echo "## Writing version string $$pkg_version to build-info.plist" ;\
+	/usr/libexec/PlistBuddy -c "Set :version '$$pkg_version'" $(CURDIR)/pkg/erase-install/build-info.plist
+
+	@echo
+	@echo "## Making package in '$(PKG_ROOT)' directory"
 	cd $(CURDIR)/pkg && python3 $(MUNKIPKG) erase-install
 	open $(PKG_BUILD)
-
-.PHONY : nopython
-nopython: 
-	@echo "Copying erase-install.sh into /Library/Management/erase-install"
-	mkdir -p "$(PKG_ROOT_NOPYTHON)/Library/Management/erase-install"
-	cp "$(CURDIR)/erase-install.sh" "$(PKG_ROOT_NOPYTHON)/Library/Management/erase-install/erase-install.sh"
-	chmod 755 "$(PKG_ROOT_NOPYTHON)/Library/Management/erase-install/erase-install.sh"
-
-	@echo "Copying installinstallmacos.py into /Library/Management/erase-install"
-	cp "$(CURDIR)/../macadmin-scripts/installinstallmacos.py" "$(PKG_ROOT_NOPYTHON)/Library/Management/erase-install/installinstallmacos.py"
-
-	@echo "Making package in $(PKG_BUILD_NOPYTHON) directory"
-	cd $(CURDIR)/pkg && python3 $(MUNKIPKG) erase-install-nopython
-	open $(PKG_BUILD_NOPYTHON)
-
-.PHONY : depnotify
-depnotify: 
-	@echo "Copying erase-install.sh into /Library/Management/erase-install"
-	mkdir -p "$(PKG_ROOT_DEPNOTIFY)/Library/Management/erase-install"
-	cp "$(CURDIR)/erase-install.sh" "$(PKG_ROOT_DEPNOTIFY)/Library/Management/erase-install/erase-install.sh"
-	chmod 755 "$(PKG_ROOT_DEPNOTIFY)/Library/Management/erase-install/erase-install.sh"
-
-	@echo "Copying installinstallmacos.py into /Library/Management/erase-install"
-	cp "$(CURDIR)/../macadmin-scripts/installinstallmacos.py" "$(PKG_ROOT_DEPNOTIFY)/Library/Management/erase-install/installinstallmacos.py"
-
-	@echo "Installing Python into /Library/Management/erase-install"
-	python3 "$(PYTHON_INSTALLER_SCRIPT)" --destination "$(PKG_ROOT_DEPNOTIFY)/Library/Management/erase-install/" --python-version=$(PYTHON_VERSION) --pip-requirements="$(PYTHON_REQUIREMENTS)"
-
-	@echo "Downloading and extracting DEPNotify.app into /Applications/Utilities"
-	mkdir -p "$(PKG_ROOT_DEPNOTIFY)/Applications/Utilities"
-	curl -L "$(DEPNOTIFY_URL)" -o "$(DEPNOTIFY_ZIPPATH)"
-	unzip -o "$(DEPNOTIFY_ZIPPATH)" -d "$(PKG_ROOT_DEPNOTIFY)/Applications/Utilities"
-	chmod -R 755 "$(PKG_ROOT_DEPNOTIFY)/Applications/Utilities"
-	rm -Rf "$(PKG_ROOT_DEPNOTIFY)/Applications/Utilities/__MACOSX"
-
-	@echo "Making package in $(PKG_BUILD_DEPNOTIFY) directory"
-	cd $(CURDIR)/pkg && python3 $(MUNKIPKG) erase-install-depnotify
-	open $(PKG_BUILD_DEPNOTIFY)
-
-
 
 .PHONY : clean
 clean :
 	@echo "Cleaning up package root"
 	rm -Rf "$(PKG_ROOT)/Library/Management/erase-install/"* ||:
-	rm -Rf "$(PKG_ROOT_NOPYTHON)/Library/Management/erase-install/"* ||:
-	rm -Rf "$(PKG_ROOT_DEPNOTIFY)/Library/Management/erase-install/"* ||:
-	rm -Rf "$(PKG_ROOT_DEPNOTIFY)/Applications/Utilities/"* ||:
 	rm $(CURDIR)/pkg/erase-install/build/*.pkg ||:
-	rm $(CURDIR)/pkg/erase-install-nopython/build/*.pkg ||:
-	rm $(CURDIR)/pkg/erase-install-depnotify/build/*.pkg ||:
+	rm -Rf $(CURDIR)/pkg/erase-install/scripts/*.pkg ||:
+	rm -Rf $(CURDIR)/pkg/erase-install/payload ||:

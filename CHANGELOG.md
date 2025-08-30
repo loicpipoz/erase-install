@@ -1,12 +1,363 @@
 # CHANGELOG
 
+## Known Issues in current release
+
+For open issues and known bugs, please see the [Issues](https://github.com/grahampugh/erase-install/issues) page.
+
+## Notice for installing erase-install package on macOS Sequoia
+
+Since the package on this site is not signed, if you download this package from a browser and try to install it from Finder on a Mac running macOS Sequoia, it will fail to install, even if running Ctrl-Click. To solve this, do **one** of these:
+
+1. Go to System Settings, Privacy & Security, scroll down, click on "Open Anyway".
+2. Install from the command line, e.g. `sudo installer -tgt / -pkg /path/to/erase-install-36.0.pkg`
+3. Remove the quarantine bit, e.g. `xattr -d com.apple.quarantine /path/to/erase-install-36.0.pkg`
+
 ## [Untagged]
 
 No date
 
+## [38.0]
+
+No date
+
+### Updates in 38.0
+
+- New experimental `--native` mode. This can be used instead of using `mist-cli` (standard mode), or `--fetch-full-installer`. It requires macOS 15 or newer to be running on the base system, or `jq` to be separately installed, as it makes extensive use of `jq`. The advantage of this mode is that it requires less space than when using `mist-cli`, as it only downloads `InstallAssistant.pkg` rather than creating a disk image containing it. However, discovering the package URLs takes longer than `mist-cli` as the shell commands used run slower. To compensate for this, a JSON file of results is cached for one day, to help testing go faster.
+- `--native` mode is the default in cases where the base system is running macOS 15.6 or newer, because `mist-cli` currently fails to create the installer package [mist-cli Issue #186](https://github.com/ninxsoft/mist-cli/issues/186). The `--fetch-full-installer` option should also work. Native mode can be overridden using the `--mist` flag. Would cause downloads to fail but can be useful along with `--list` to speed up obtaining a list of available installers.
+- Updated the calculation of Darwin version from major OS version and vice versa to account for macOS 26 (Darwin 25).
+- Added temporary catalog for macOS 26 betas (updated again 24 August).
+- Bumped swiftDialog version to 2.5.6 except for systems running macOS 11 which still get 2.2.1. Note that the installer package includes both version 2.5.6 and 2.2.1, and the appropriate one will be installed.
+- Added macOS Tahoe icon.
+
+### Bugfixes in 38.0
+
+- Additional error handling for `--very-insecure-mode` to prevent the script getting as far as running `startosinstall` if the supplied credentials are incorrect.
+
+## [37.0]
+
+25.11.2024
+
+### Updates in 37.0
+
+- Now uses a portable version of swiftDialog that is installed in the Working Directory (by default, `/Library/Management/erase-install`). This prevents incompatibility with any preexisting version of swiftDialog, and also allows the version that is downloaded to be removed when using the `--cleanup-after-use` flag. Note that a portable release is not available for v2.2.1 of swiftDialog, which is required for computers running macOS Big Sur, so if the package is installed on a Big Sur Mac, the pkg installer is used so any existing version of swiftDialog will be overwritten, as before.
+- Added a check to see if startosinstall authorisation failed, which will cause the script to quit rather than wait until it times out (thanks @pcrandom).
+- Obfuscates the credentials from the output when using `--very-insecure-mode` (thanks @pcrandom).
+  
+## [36.1]
+
+13.11.2024
+
+### Updates in 36.1
+
+- Bumped swiftDialog version to 2.5.3 except for systems running macOS 11 which still get 2.2.1. Note that the installer package includes both version 2.5.3 and 2.2.1, and the appropriate one will be installed.
+
+### Bugfixes in 36.1
+
+- `--update` and `--overwrite` options will now function when an invalid installer is present on the device (addresses #529).
+- Filtered the mist list search to the prechosen OS, version or build and added a check to see that there is a version of the prechosen OS that is compatible with the system. Prevents downloading e.g. 15.1 on a 15.2 beta system when `--os 15` is chosen (addresses #534).
+- Fixed checks for newer packages (addresses #532).
+
+## [36.0]
+
+17.09.2024
+
+### Updates in 36.0
+
+- Added support for macOS Sequoia, including the icon.
+- Added Ukrainian localization (#512, thanks to @liubkkkko for this contribution).
+- Added `--cloneuser` option.
+- Bumped mist-cli version to 2.1.1.
+- Bumped swiftDialog version to 2.5.2 except for systems running macOS 11 which still get 2.2.1. Note that the installer package includes both version 2.5.2 and 2.2.1, and the appropriate one will be installed.
+- Switched from using `/bin/echo` to using the built-in `echo`.
+
+### Bugfixes in 36.0
+
+- Ensured `icons` directory is created when running as standalone script.
+- Updated `Makefile` to use a GitHub Personal Access Token to allow builds where an API rate limit had been reached. If you're building you're own version, put your GitHub Personal Access Token into `/Users/Shared/gh_token` (or edit the Makefile accordingly).
+
+## [35.0]
+
+11.06.2024
+
+### Updates in 35.0
+
+- Added the `--min-battery` option which, in conjunction with `--check-power` allows to set a minimum battery percentage, above which the power check is ignored. For example, `--check power --min-battery 30` sets the minimum percentage to 30%. The minimum allowed is 15% (addresses #455, thanks @PhillyPhoto). `--check power` without `--min-battery` still requires AC power.
+- Added a 5-minute timeout to the password dialogs to prevent people ignoring it (addresses #501, thanks @PhillyPhoto).
+- Added the `--language` option to give the ability to override the language of the dialog windows - the default is either the system language or English if there is no translation of the system language available. Now you can set the language to any of the available translations using the short language codes, which are **en, de, fr, nl, es, pt, ja**. For example, `--language de` or `--language=de` will set the language to German regardless of the system language setting.
+- Bumped mist-cli version to 2.1 which fixes a bug downloading macOS Sequoia beta installers.
+- Bumped swiftDialog version to 2.5.0 except for systems running macOS 11 which still get 2.2.1. Note that the installer package includes both version 2.5.1 and 2.2.1, and the appropriate one will be installed.
+- Added the catalog `https://swscan.apple.com/content/catalogs/others/index-15seed-15-14-13-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog`, which can be used with `--beta` and `--catalog 15` to obtain macOS Sequoia beta installers. Note that this will be replaced with the production macOS 15 catalog once it is published.
+
+### Bugfixes in 35.0
+
+- Fixed the comparison check of installer pkgs with current system when using `--pkg` mode.
+- Changed lock symbol colour on the password dialog from grey to black as grey seems to have stopped working.
+- Fixed code comment error (#508, thanks @jarrodCoombes).
+- Fixed some function output labels.
+
+## [34.0]
+
+19.04.2024
+
+### Updates in 34.0
+
+- Added Japanese localization (#496, thanks to @teddi for this contribution).
+- Enforced the required version of mist-cli to prevent reported issues of older versions downloading incompatible macOS installers (#500, thanks @cchsadmin).
+- Started using the GitHub API to obtain swiftDialog and mist-cli download URL (#494, thanks @bartreardon).
+
+### Bugfixes in 34.0
+
+- Fixed the comparison check of this script with latest available version.
+
+## [33.1]
+
+14.03.2024
+
+### Bugfixes in 33.1
+
+- Changed swiftDialog download URL which has changed again.
+- Fixed logic for comparing OS versions with the `--os` and `--sameos` options, which is broken in 33.0.
+
+## [33.0]
+
+01.03.2024
+
+### Updates in 33.0
+
+- Removed searches for cached DMG and sparseimages (addresses #480).
+- Added experimental `--check-activity` option. This checks for an active meeting when using `--reinstall` or `--erase` options, and quits silently if so (#483, thanks @amadotejada for the idea, and thanks to the folks of `installomator` for the improved function, and to @BigMacAdmin for pointing me in that direction).
+- Bumped swiftDialog version to 2.4.2 except for systems running macOS 11 which still get 2.2.1.
+- The installer package now includes both swiftDialog 2.4.2 and 2.2.1, and the postinstall script determines which version to install on the system based on the system OS.
+  - NOTE: This also limits the package installation to macOS 11 and newer. If you wish to use erase-install on macOS 10.15 or older, it is recommended to use v27.3.
+- `--fetch-full-installer` no longer attempts to set a seed program using `seedutil` as this functionality has been removed since 13.4 and it's unlikely that betas for older major OSs will ever be listed again. Therefore, the `--seedprogram` option has been removed (it was already superfluous in the mist-cli workflows). To list/use beta versions in either normal (mist-cli) mode or with `--fetch-full-installer`, add the `--beta` option.
+- Switched to using the zsh function `is-at-least` for simpler version comparisons throughout the script (thanks to the folks of `installomator` for the inspiration).
+
+### Bugfixes in 33.0
+
+- Removed quotes from the value obtained from any inputted `--parameter="value"` option.
+- Added missing `--credentials=XYZ` option (previously only `--credentials XYZ` worked) (thanks @allanp81).
+- Fixed the `--fetch-full-installer` option from failing due to a bug in the code change made in v31.0 to remove `seedutil` options (addresses #479 and #488).
+- Fixed the simultaneous use of `--sameos` and `--update` options, so that an outdated installer of the same OS as the system will be replaced when using both these optipons together (addresses #485).
+- Removed the previous bugfix that was introduced in version 30.2 to workaround a bug in mist-cli at the time that would list RCs as regular builds.
+- Fix erroneous error in output (`ERROR: Notifications are not allowed for this application`) when checking existing Dialog version.
+
+## [32.0]
+
+10.01.2024
+
+### Updates in 32.0
+
+- Included a compatibility check for cached installers, utilising data from the `com_apple_MobileAsset_MacSoftwareUpdate.xml` file within the `Shared Support.dmg`. This should prevent installers that were not obtained using erase-install from running if they are not compatible with the system.
+- Added the ability to change the default icon size in dialogs, and to supply an alternative icon for confirmation dialogs (#462, addressed in #463, thanks to @popaprozac).
+- Bumped swiftDialog version to 2.3.3 except for systems running macOS 11 which still get 2.2.1. Note that the installer package includes version 2.3.3. If running on Big Sur, this will be deleted and an internet connection is required to download version 2.2.1.
+- Fixed swiftDialog URL, which has moved (#469, thanks to @scottborcherdt).
+- Replaced some SF Symbol icons in dialogs for compatibility with macOS 11 (fixes #470, thanks to @BigMacAdmin).
+
+### Bugfixes in 32.0
+
+- Fixed swiftDialog URL, which has moved (#469, thanks to @scottborcherdt).
+- Replaced some SF Symbol icons in dialogs for compatibility with macOS 11 (fixes #470, thanks to @BigMacAdmin).
+
+## [31.0]
+
+27.09.2023
+
+### Updates in 31.0
+
+- Bumped mist-cli version to 2.0.
+- Bumped swiftDialog version to 2.3.2 except for systems running macOS 11 which still get 2.2.1. Note that the installer package includes version 2.3.2. If running on Big Sur, this will be deleted and an internet connection is required to download version 2.2.1.
+- Added localisation for Brazilian Portuguese (#432, thanks to @hooleahn).
+- `--os` searches will search for the relevant version name rather than number, to avoid a bug in mist-cli that may result in download an inappropriate installer if the chosen major OS is not available. Note that this bug is fixed in mist-cli 2.0, but I'll leave the workaround in place for the time being.
+- Now uses icons in the GitHub repo instead of using the InstallAssistant icon which occasionally doesn't render.
+- Moved up the log rotation so that we get all output of the current run, and made it less verbose.
+- Added the macOS Sonoma catalog.
+- Invalid package is now removed when using `--replace-invalid` or `--update` regardless of whether the `--pkg` option is selected or not.
+
+### Bugfixes in 31.0
+
+- Stopped trying to use `seedutil` on 13.4 or newer when using the `--ffi` option as it doesn't work any more.
+
+## [30.2]
+
+24.08.2023
+
+### Bugfixes in 30.2
+
+- Fixed the erroneous listing of 13.6 RC in the regular lists. This is caused due to the mist-cli default catalogs including the seed catalogs. Now the production catalog is specified unless using the `--beta` option.
+
+## [30.1]
+
+28.07.2023
+
+- Removed ANSI formatting from mist-cli output when listing installers.
+
+### Bugfixes in 30.1
+
+- Worked around a bug in mist-cli where it isn't setting the permissions of the Install application properly.
+- Now outputs stderr from swiftDialog to dev/null to avoid occasional Xfont error warnings in logs
+
+## [30.0]
+
+18.07.2023
+
+- Converted to `zsh` (but the filename remains erase-install.sh).
+- Bumped the compatible version of mist-cli to v1.14.
+- Bumped the compatible version of swiftDialog to 2.2.1.4591.
+- Can now run `erase-install.sh --list` safely as the current user (without sudo); logs and files are written to a temporary location.
+- A notification is shown if running an older version of erase-install than the latest available (on macOS 13 or newer).
+- Now allows `mist` to use a caching server (addresses #406). Add the following option:
+  - `--caching-server https://YOUR_URL_HERE`
+- It is now possible to supply credentials in base64 format to avoid the prompt for credentials on Apple Silicon computers.
+  - **NOTE THIS IS VERY INSECURE! ONLY USE IN A SAFE ENVIRONMENT!!!**
+  - Use the supplied script `set-credentials.sh` to generate the base64-encoded credentials.
+  - Alternatively use the following shell command: `printf "%s:%s" "<USERNAME>" "<PASSWORD>" | iconv -t ISO-8859-1 | base64 -i -`
+  - Add the following option: `--credentials ENCODEDCREDENTIALS`
+  - Also add this option: `--very-insecure-mode` (this is required in addition to the `--credentials` option!).
+- If running the script on macOS 11, it now checks to see if the swiftDialog version is too new (addresses #392).
+- `erase-install-launcher.sh` is also converted to zsh.
+- `erase-install-launcher.sh` should now respect parameters that have spaces in them, such as commands called by the `--postinstall-command` option.
+- Pre- and post-install commands are now run in `--test-run` mode.
+- Now exits out when some incompatible arguments are provided at the same time.
+
+### Bugfixes in 30.0
+
+- Fixed version comparisons where there is a point release (fixes #410).
+- `--update` no longer ignores `--sameos` (fixes #407).
+
+## [29.2]
+
+07.06.2023
+
+- Bumped mist-cli to v1.12, which includes a less verbose output for the download logs (one register per percentage download instead of one register per second).
+
+### Bugfixes in 29.2
+
+- Fixed downloads from mist only selecting compatible builds.
+
+## [29.1]
+
+27.02.2023
+
+- `--os` can now be used along with `--fetch-full-installer`.
+- Removed audible sound when 1 hour timeout is reached.
+- Log output from `mist` is now somewhat reduced due to the use of the `no-ansi` mode.
+- Added `--quiet` option to prevent output from mist during download. Note that with this mode enabled, there is no download progress bar, since the output is required to read the download progress.
+- Log files are now rotated up to 9 times (#369, thanks to @aschwanb).
+
+### Bugfixes in 29.1
+
+- No longer lists deferred updates when using along `--list` with  `--fetch-full-installer` (addresses #347).
+- Fixed issue with swiftDialog windows not showing up. This was due to a change in behaviour in swiftDialog version 2.1 enforcing running the app as the local user rather than root, which meant that the log file could not be overwritten. The log file is now deleted after use and each run creates a random logfile path (addresses #352, #366 and #368).
+- Reintroduced `--skip-validation` functionality.
+- Fixed issue with using `--version` along with `--fetch-full-installer`.
+- Fixed a problem where `mist` did not correctly output (addresses #357).
+
+## [29.0]
+
+10.02.2023
+
+- Added a new `--check-fmm` option to prompt the user to disable Find My Mac if it is enabled (in `--erase` mode only). The default wait limit is 5 minutes before failing. This can be altered using a new `--fmm-wait-limit` option.
+
+### Bugfixes in 29.0
+
+- Fixed Minimum Drive Space dialog not showing (fixes #353).
+- Fixed incorrect full screen "reboot delay" screen (fixes #348). If `--fs` mode is used, the fullscreen preparation window now remains until the end of the reboot delay period.
+- Fixed some incorrect/inconsistent window and icon sizes.
+- Fixed some missing window titles.
+- Fixed missing icon on macOS<13.
+
+## [28.1]
+
+28.01.2023
+
+- Added a new `--cache-downloads` option. In 28.0, `mist` cached downloads into `/private/tmp/com.ninxsoft.mist`. This is now optional.
+- Added a new experimental `--set-securebootlevel` option (in `--erase` mode only) uses the command `bputil -f -u $current_user -p $account_password` to ensure that the OS is reset to a high secure boot level after reinstallation (thanks to @mvught).
+- Added a new experimental `--clear-firmware` option (in `--erase` mode only) uses the command `nvram -c` to ensure that the OS is reset to a high secure boot level after reinstallation (thanks to @mvught).
+- `erase-install` now reports a non-zero exit code (143 to be exact) when it is being abnormally terminated (e.g. by pressing CTRL+C or getting terminated by SIGTERM). Previously it would return the exit code of the last command being executed at time of termination, which could be non-zero or zero depending on the specific circumstances, which then could have been reported as successful execution in a Jamf policy. This change will make it easier to discover such errors. The exit code of the last executed command will be logged in addition to returning 143 to facilitate debugging (#318, thanks @cvgs).
+
+### Bugfixes in 28.1
+
+- `mist` result is now correctly interpreted when checking for a newer version.
+- The `--update` option now triggers an invalid installer to be overwritten.
+- Progress is now once again shown during the preparation phase, and the progress bar properly shows incremental progress.
+
+## [28.0]
+
+24.01.2023
+
+- Calls to `installinstallmacos.py` have been replaced with calls to `mist`. Minimum OS requirement for this is macOS 10.15.
+- Dialogues are now all presented using [swiftDialog](https://github.com/bartreardon/swiftDialog). **Minimum OS requirement for this is macOS 11.**
+- The minimum compatible OS for swiftDialog is macOS Big Sur 11. If you need to upgrade a Mac on an older version of macOS, use Version 27.x of erase-install.
+- Downloads are now only available as a `pkg` or an `app`. Downlaoding of a `sparseimage` has been discontinued, though the script will continue to search for them to allow for upgrade from earlier versions of erase-install without having to re-download the installer.
+- The log has moved to `/Library/Management/erase-install/log/erase-install.log`
+- New `--silent` mode. The script can now be run without any dialogues. On Apple Silicon, this requires the use of the keychain method to provide credentials. Minimum OS requirement for this is macOS 10.15.
+- Add Spanish dialogs.
+- For testing purposes, a username and password may be placed in a custom keychain. Username is optional as the current user can be used. To create the keychain and add the keys, run the following commands:
+  - `security create-keychain -P NAME_OF_KEYCHAIN` - this will prompt you to create a password for the keychain. The keychain will be stored in `~/Library/Keychains`. `NAME_OF_KEYCHAIN` must match the value you give to the `--kc` key. The password you create must match the value you give to the `--kc-pass` key.
+  - `security add-generic-password -s NAME_OF_SERVICE -a NAME_OF_USER -w PASSWORD NAME_OF_KEYCHAIN` - `NAME_OF_SERVICE` must match the value you provide to the `--kc-service` key. `NAME_OF_USER` and `PASSWORD` must be the valid credentials of an account on the computer with Volume Ownership.
+  
+## [27.3]
+
+24.01.2023
+
+- (change to `installinstallmacos.py`): version comparisons are now done with the python module `packaging.version.LegacyVersion`, as `parse_version` proved unreliable.
+
+## [27.2]
+
+14.12.2022
+
+- Better handling of replacing broken sparseimage files. If `--overwrite`, `--update`, or `--replace-invalid` are used and the version cannot be obtained from the sparseimage, the installer should be downloaded again. This also fixes `--overwrite` where an existing sparseimage is present.
+- Add `--no-timeout` option which extends the timeout period to 24h.
+
+## [27.1]
+
+24.10.2022
+
+- Add catalog for macOS Ventura to `installinstallmacos.py`, update checksum in `erase-install.sh`.
+
+## [27.0]
+
+14.10.2022
+
+- Allows for logs to be reported back to Jamf Pro by changing the method `startosinstall` is launched. This requires `rebootdelay` to be set, which allows uploading the script result to Jamf Pro before `startosinstall` force-quits our script and reboots the machine (thanks to @cvgs).
+- Adds launcher script `erase-install-launcher.sh` which can be used to start the pkg-delivered version of erase-install from the Scripts section of Jamf Pro (it also supports more than 8 arguments for `erase-install` because you can add multiple arguments in one Jamf Parameter field) (thanks to @cvgs).
+- Adds some fallbacks for the `--fetch-full-installer` option.
+- If no build ID is found in the existing installer, we set it as invalid instead of exiting the script (addresses #271, thanks to @sphen13).
+- Fix the fallback free disk space calculation (`df` was returning disk size in kb and not gb) (#274 - thanks to @sphen13).
+- `--update` option now uses new logic in `installinstallmacos.py` to restrict searches to a certain OS or version (addresses #287).
+- Improved function descriptions in the script.
+- Changed the `Makefile` to download the correct version of `installinstallmacos.py` during the make process.
+- Improved checksum checks for `installinstallmacos.py` - if an incorrect checksum is found, the correct version is downloaded rather than the script failing (unless `--no-curl` option has been added).
+- Add titles to username and password dialog boxes (#289, thanks to @cvgs)
+- Now correctly deletes a sparseimage from the cache when `--move` is used and the sparseimage is downloaded (#297, thanks to @andyincali)
+- Now correctly fails if an invalid installer is found and `--replace-invalid`, `--update`, `--overwrite` or `--skip-validation` are not set (addresses #298).
+
+## [26.2]
+
+23.07.2022
+
+- Allows `rebootdelay` for 10.15 (thanks to @cvgs).
+- New `--newvolumename` key which will set the volume name after an `eraseinstall` workflow (thanks to @bmacphail).
+- Now correctly validates whether a selected build value matches the cached installer.
+
+## [26.1]
+
+27.06.22
+
+- Universal python build packages.
+- Use `pkg_resources` instead of `distutils` where available (allows for removal if `distutils` in python 3.12 - addresses [grahampugh/macadmin-scripts/issues/47](https://github.com/grahampugh/macadmin-scripts/issues/47)).
+- Improves the `--fetch-full-installer` option by looking for the latest version if not specified, and checking that a pre-chosen version is in the list. `--list` in conjunction with `--ffi` also now uses `--list-full-installers` instead of reverting to `installinstallmacos.py`.
+- Allows the usage of spaces in `--workdir` and `--path` (thanks to @cvgs).
+- Added `--max-password-attempts=NN` option, which can also be set to `infinite` to prevent canceling the password dialog (addresses #216, thanks to @cvgs).
+- Changes dialogs so that the Cancel button is on the left, and default button is on the right (thanks to @cvgs).
+- Script now uses `sysctl` to check for Apple Silicon (addresses #225, thanks to @cvgs).
+- Some minor changes to the German translation (thanks to @cvgs).
+- Adds an additional check for `--min-drive-space` right before start of the installation (should address #242, thanks to @cvgs).
+- Adds `-nobrowse` to all instances of `hdiutil` to prevent mounted images appearing on the desktop (thanks to @cvgs).
+
 ## [26.0]
 
-22.02.22
+No date
 
 - Adds `--catalog` to allow an easier way to select which software update catalog to use, rather than the defaults set in `installinstallmacos.py`. Example: `--catalog 10.15` will use the catalog for Darwin version 19, `--catalog 11` will use Darwin version 20. This is to address omissions in the catalogs for older OSes (somewhat addresses #169, #160).
 - Allow for more lenient checks for Volume Ownership against the entered username (#177, thanks to @cvgs)
@@ -399,11 +750,33 @@ Thanks to '@ahousseini' for various contributions to this release
 
 - Initial version. Expects a manual choice of installer from `installinstallmacos.py`.
 
-[untagged]: https://github.com/grahampugh/erase-install/compare/v26.0...HEAD
+[untagged]: https://github.com/grahampugh/erase-install/compare/v36.1...HEAD
+[36.1]: https://github.com/grahampugh/erase-install/compare/v36.0...v36.1
+[36.0]: https://github.com/grahampugh/erase-install/compare/v35.0...v36.0
+[35.0]: https://github.com/grahampugh/erase-install/compare/v34.0...v35.0
+[34.0]: https://github.com/grahampugh/erase-install/compare/v33.1...v34.0
+[33.1]: https://github.com/grahampugh/erase-install/compare/v33.0...v33.1
+[33.0]: https://github.com/grahampugh/erase-install/compare/v32.0...v33.0
+[32.0]: https://github.com/grahampugh/erase-install/compare/v31.0...v32.0
+[31.0]: https://github.com/grahampugh/erase-install/compare/v30.2...v31.0
+[30.2]: https://github.com/grahampugh/erase-install/compare/v30.1...v30.2
+[30.1]: https://github.com/grahampugh/erase-install/compare/v30.0...v30.1
+[30.0]: https://github.com/grahampugh/erase-install/compare/v29.1...v30.0
+[29.1]: https://github.com/grahampugh/erase-install/compare/v29.0...v29.1
+[29.0]: https://github.com/grahampugh/erase-install/compare/v28.1...v29.0
+[28.1]: https://github.com/grahampugh/erase-install/compare/v28.0...v28.1
+[28.0]: https://github.com/grahampugh/erase-install/compare/v27.3...v28.0
+[27.3]: https://github.com/grahampugh/erase-install/compare/v27.2...v27.3
+[27.2]: https://github.com/grahampugh/erase-install/compare/v27.1...v27.2
+[27.1]: https://github.com/grahampugh/erase-install/compare/v27.0...v27.1
+[27.0]: https://github.com/grahampugh/erase-install/compare/v26.2...v27.0
+[26.2]: https://github.com/grahampugh/erase-install/compare/v26.1...v26.2
+[26.1]: https://github.com/grahampugh/erase-install/compare/v26.0...v26.1
 [26.0]: https://github.com/grahampugh/erase-install/compare/v25.0...v26.0
 [25.0]: https://github.com/grahampugh/erase-install/compare/v24.1...v25.0
 [24.1]: https://github.com/grahampugh/erase-install/compare/v24.0...v24.1
 [24.0]: https://github.com/grahampugh/erase-install/compare/v0.23.0...v24.0
+[0.23.0]: https://github.com/grahampugh/erase-install/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/grahampugh/erase-install/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/grahampugh/erase-install/compare/v0.20.1...v0.21.0
 [0.20.1]: https://github.com/grahampugh/erase-install/compare/v0.20.0...v0.20.1
